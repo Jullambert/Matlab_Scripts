@@ -1,0 +1,156 @@
+%% Script made to analyze the calibration files for several conditions 
+%% for the Homemade pinprick of 64 mN with the DensoRobot
+
+clc;
+clear all;
+close all;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Param.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+SeuilPic = 0.3; %valeur de seuil de detection de pic
+[B A] = butter(4,10/500,'low');
+TempStimuli = [15 30 40];
+Affichage = {'bx' 'go' 'r*' 'k^' 'mp' 'ch' };
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Import Data + Variables + Filtre
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% DataFiles = dataset;
+% DataFiles = struct('FileName',{{}}, 'SubjNum',[], 'SubjName',{{}});
+DataFiles = [];
+DataFiles.FileName = {};
+DataFiles.Fz_mean = [];
+DataFiles.Fz = [];
+
+count=0;
+RootDir = uigetdir;
+CalibrationFilesName = dir(RootDir);
+CalibrationFilesName(1:2) = []; % delete . and ..
+
+for s = 1:length(CalibrationFilesName)
+    
+        filename = CalibrationFilesName(s).name;
+           count=count+1;
+        file = dir(fullfile(RootDir,filename));   
+        DataFiles.FileName{end+1,1} = filename;
+            
+            
+            
+            C = importdata(files(f).name);
+            c = C.data;
+            
+            Fx_Mini40 = c(:,9);
+            Fx_Nano43 = c(:,15);
+            FiltreFx_Mini40 = filtfilt(B, A, Fx_Mini40);
+            FiltreFx_Nano43 = filtfilt(B, A, Fx_Nano43);
+            
+            Fy_Mini40 = c(:,10);
+            Fy_Nano43 = c(:,16);
+            FiltreFy_Mini40 = filtfilt(B, A, Fy_Mini40);
+            FiltreFy_Nano43 = filtfilt(B, A, Fy_Nano43);
+            
+            Fz_Mini40 = -c(:,11);
+            Fz_Nano43 = -c(:,17);
+            FiltreFz_Mini40 = filtfilt(B, A, Fz_Mini40);
+            FiltreFz_Nano43 = filtfilt(B, A, Fz_Nano43);
+            
+            Ft = sqrt((FiltreFx_Mini40+FiltreFx_Nano43).^2 + (FiltreFy_Mini40+FiltreFy_Nano43).^2);
+            
+            [ValPic, NumCycle] = findpeaks(Ft,'MINPEAKHEIGHT',SeuilPic);
+            for j=1:length(NumCycle)
+                if ((NumCycle(j)>5850) && (NumCycle(j)<6000))
+                    TinitMvt1 = NumCycle(j);    end
+                % TinitMvt permet de définir le moment d'apprition du pic lié au début du
+                % déplacement. A partir de cette valeur, on peut calculer la
+                % valeur du coefficient statique et dynamique
+                %                 if ((NumCycle(j)>12000) && (NumCycle(j)<13500))
+                %                     TinitMvt2=NumCycle(j);      end
+                % Prévu pour pouvoir analyser un fichier avec deux mouvements consécutifs.
+                
+            end
+            
+            FnStat1 = mean(FiltreFz_Mini40(TinitMvt1-500:TinitMvt1)+FiltreFz_Nano43(TinitMvt1-500:TinitMvt1));
+            FtStat1 = Ft(TinitMvt1);
+            %             FnStat2 = mean(FiltreFz_Mini40(TinitMvt2-500:TinitMvt2)+FiltreFz_Nano43(TinitMvt2-500:TinitMvt2));
+            %             FtStat2 = Ft(TinitMvt2);
+            
+            FnDyn1 = mean(FiltreFz_Mini40(TinitMvt1+200:TinitMvt1+500)+FiltreFz_Nano43(TinitMvt1+200:TinitMvt1+500));
+            StdFnDyn1 = std(FiltreFz_Mini40(TinitMvt1+200:TinitMvt1+500)+FiltreFz_Nano43(TinitMvt1+200:TinitMvt1+500));
+            FtDyn1 = mean(Ft(TinitMvt1+200:TinitMvt1+500));
+            StdFtDyn1 = std(Ft(TinitMvt1+200:TinitMvt1+500));
+            %             FnDyn2 = mean(FiltreFz_Mini40(TinitMvt2+200:TinitMvt2+500)+FiltreFz_Nano43(TinitMvt2+200:TinitMvt2+500));
+            %             FtDyn2 = mean(Ft(TinitMvt2+200:TinitMvt2+500));
+            Temp_Box0 = mean(c(TinitMvt1+200:TinitMvt1+500,28));
+            Temp_Box1 = mean(c(TinitMvt1+200:TinitMvt1+500,29));
+            Temp_Box2 = mean(c(TinitMvt1+200:TinitMvt1+500,30));
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %Calcul coeff stat et dyn
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            DataFiles.Temp_Box0(end+1,1) = Temp_Box0;
+            DataFiles.Temp_Box1(end+1,1) = Temp_Box1;
+            DataFiles.Temp_Box2(end+1,1) = Temp_Box2;
+            DataFiles.FnStat1_mean(end+1,1) = roundn((FnStat1),1);
+            DataFiles.FtStat1(end+1,1) = FtStat1;
+            DataFiles.CFStat1(end+1,1) = FtStat1/FnStat1;
+            DataFiles.FnDyn1_mean(end+1,1) = roundn((FnDyn1),1);
+            DataFiles.FnDyn1_std(end+1,1) = StdFnDyn1;
+            DataFiles.FtDyn1(end+1,1) = FtDyn1;
+            DataFiles.FtDyn1_std(end+1,1) = StdFtDyn1;
+            DataFiles.CFDyn1(end+1,1) = FtDyn1/FnDyn1;
+            
+            %             DataFiles.FnStat2_mean(end+1,1) = roundn((FnStat2),1);
+            %             DataFiles.FtStat2(end+1,1) = FtStat2;
+            %             DataFiles.Temp2(end+1,1) = c(1,30);
+            %             DataFiles.CFStat2(end+1,1) = FtStat2/FnStat2;
+            %             DataFiles.CFDyn2(end+1,1) = FtDyn2/FnDyn2;
+            %             DataFiles.FnDyn2_mean(end+1,1) = roundn((FnDyn2),1);
+            %             DataFiles.FtDyn2(end+1,1) = FtDyn2;
+            
+            C=[];
+            c=[];
+            clear FiltreF*
+        end
+    end
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Sauvegarde du tableau de résultats
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+l= length(DataFiles.SubjNum);
+savetable('testing3',DataFiles,l);
+
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Tracés des résultats.
+%La boucle permet de faire le tri (en fonction de la température de stimulation)
+%dans les données propres à un sujet et d'afficher sur un même graphe les
+%essais des sujets pour une même température de stimulation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% for t=1:length(TempStimuli)
+%     for p=1:length(SubjDirs)
+%         figure(t)
+%         plot(DataFiles.FnStat1_mean(DataFiles.Temp_Box0==TempStimuli(t) & DataFiles.SubjNum== p),DataFiles.CFStat1(DataFiles.Temp_Box0==TempStimuli(t) & DataFiles.SubjNum==p),Affichage{p});
+%         hold on
+%         legend(SubjDirs.name);
+%         title('CF Statique pour une temp de stimuli constante');
+%         
+%         figure(t+3)
+%         plot(DataFiles.FnStat1_mean(DataFiles.Temp_Box0==TempStimuli(t) & DataFiles.SubjNum== p),DataFiles.CFDyn1(DataFiles.Temp_Box0==TempStimuli(t) & DataFiles.SubjNum==p),Affichage{p});
+%         hold on
+%         legend(SubjDirs.name);
+%         title('CF Dynamique pour une temp de stimuli constante');
+%         %figure(t+6)
+%         %errorbar((DataFiles.FnStat1_mean(DataFiles.Temp_Box0==TempStimuli(t) & DataFiles.SubjNum== p),DataFiles.CFStat1(DataFiles.Temp_Box0==TempStimuli(t) & DataFiles.SubjNum==p),Affichage{p});
+%         
+%     end
+% end
+
+
+
+

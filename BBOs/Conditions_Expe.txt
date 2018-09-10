@@ -1,0 +1,3 @@
+Type_Stimulation,Nombre_Stimulation,Nombre_Cible,Contrebalancer_Cibles,Nombre_Intensite,Contrebalancer_Intensite,Taille_Bloc
+1,120,2,3,2,3,40
+2,120,2,3,2,3,40
