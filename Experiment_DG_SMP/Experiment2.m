@@ -8,25 +8,24 @@ clear all;
 % for one sliding, the normal force could stay at a baseline value during
 % the whole sliding or could be modify by a value equal to DeltaForceN
 
-NbrOfCondition = 6;
+NbrOfForceCondition = 6;
 NbrOfConditionRepetition = 12;
 NbrSlidingPerTrial = 2;
-ForceCondition = combin1([NbrOfConditionRepetition,NbrOfCondition]);
-idx = randperm(size(ForceCondition,1));
-RandomForceCondition=ForceCondition(idx,:);
-
-StimCondition = 1:2; % 1 = baseline, 2=stimulation with variation of normal force
-[~,idx2] = sort(rand(NbrOfCondition*NbrOfConditionRepetition,numel(StimCondition)),2);
-RandomStimCondition=StimCondition(idx2);
+ForceCondition = combin1([NbrOfConditionRepetition,NbrOfForceCondition]);
+StimCondition = [1,2]; % condition 1 = baseline, condition 2=stimulation with variation of normal force
 
 ForceBaseline = 1; %[N]
 DeltaForceN = [0, 0.1 , 0.2, 0.3, 0.38, 0.5]; %[N]
+
+RandomizationForce = 0;
+RandomizationStimulation = 0;
 %% Parameters for the robot movement
 % Here under, the different steps for ONE sliding will be defined,
-NbrOfMvts = 8;
-NrOfCycles = [500 1000 1000 100 100 100 700 1000]; % one cylce = 1ms
+
+NbrOfMvts = 9;
+NrOfCycles = [500 1000 1000 50 200 50 700 500 1000]; % one cylce = 1ms
 X = zeros(1,NbrOfMvts);
-Y = [0 0 -20 -22 -24 -26 -40 0] ;%zeros(1,NbrOfMvts);
+Y = [0 0 -20 -21 -25 -26 -40 -40 0] ;%zeros(1,NbrOfMvts);
 Z = zeros(1,NbrOfMvts);
 Rz = zeros(1,NbrOfMvts);
 Fx = zeros(1,NbrOfMvts);
@@ -34,18 +33,45 @@ Fx_control = zeros(1,NbrOfMvts);
 Fy = zeros(1,NbrOfMvts);
 Fy_control = zeros(1,NbrOfMvts);
 Fz = repmat(ForceBaseline,1,NbrOfMvts);
-Fz_control = [0 1 1 1 1 1 1 0]; 
+Fz_control = [0 1 1 1 1 1 1 0 0]; 
 TrigCam = zeros(1,NbrOfMvts);
 Relative = zeros(1,NbrOfMvts) +1;
-Acc = zeros(1,NbrOfMvts)+100000;
-VoltageStimTac = zeros(1,NbrOfMvts);
-%% Generating the structure for the experiemnt
+Acc = zeros(1,NbrOfMvts)+50000;
+VoltageStimtac = zeros(1,NbrOfMvts);
+% NbrOfMvts = 10;
+% NrOfCycles = [500 1000 1000 1000 100 100 100 700 500 1000]; % one cylce = 1ms
+% X = zeros(1,NbrOfMvts);
+% Y = [0 0 -4 -24 -26 -28 -30 -44 -44 0] ;%zeros(1,NbrOfMvts);
+% Z = zeros(1,NbrOfMvts);
+% Rz = zeros(1,NbrOfMvts);
+% Fx = zeros(1,NbrOfMvts);
+% Fx_control = zeros(1,NbrOfMvts);
+% Fy = zeros(1,NbrOfMvts);
+% Fy_control = zeros(1,NbrOfMvts);
+% Fz = repmat(ForceBaseline,1,NbrOfMvts);
+% Fz_control = [0 1 1 1 1 1 1 1 0 0]; 
+% TrigCam = zeros(1,NbrOfMvts);
+% Relative = zeros(1,NbrOfMvts) +1;
+% Acc = zeros(1,NbrOfMvts)+50000;
+% VoltageStimtac = zeros(1,NbrOfMvts);
+
+%% Generating the structure for the experiment
+if RandomizationForce
+    idx = randperm(size(ForceCondition,1));
+    RandomForceCondition=ForceCondition(idx,:);
+end
+if RandomizationStimulation
+    [~,idx2] = sort(rand(NbrOfForceCondition*NbrOfConditionRepetition,numel(StimCondition)),2);
+    RandomStimCondition=StimCondition(idx2);
+else
+    StimCondition = repmat(StimCondition,NbrOfConditionRepetition*NbrOfForceCondition,1);
+end
 Count = 0;
 Xinit = 0;
 Yinit = 0;
 ConditionCount=0;
 
-for i = 1:NbrOfConditionRepetition*NbrOfCondition
+for i = 1:NbrOfConditionRepetition*NbrOfForceCondition
     % This loop will run per number of trials requested
     MovementCount=0;
     ConditionCount = ConditionCount+1;
@@ -55,9 +81,9 @@ for i = 1:NbrOfConditionRepetition*NbrOfCondition
             Count = Count+1;
             MovementCount=MovementCount+1;
             % Test to know the nbr of the "submouvement"
-            a = mod(Count,NbrOfMvts)
+            a = mod(Count,NbrOfMvts);
             if a==0
-                a=NbrOfMvts
+                a=NbrOfMvts;
             end
             perMvt.TrialNo(Count) = i;
             perMvt.MovNo(Count) = MovementCount;
@@ -71,21 +97,48 @@ for i = 1:NbrOfConditionRepetition*NbrOfCondition
             perMvt.Fx_control(Count) = Fx_control(a);
             perMvt.Fy(Count) = Fy(a);
             perMvt.Fy_control(Count) = Fy_control(a);
-            if RandomStimCondition(i,k)== 1
-                perMvt.Fz(Count) = Fz(a);
-            else
-                if a==2||a==3||a==4
-                   perMvt.Fz(Count) = ForceBaseline-DeltaForceN(RandomForceCondition(i,2));
+            if RandomizationStimulation
+                if RandomStimCondition(i,k)== 1
+                    perMvt.Fz(Count) = Fz(a);
                 else
-                   perMvt.Fz(Count) = Fz(a);
+                    if RandomizationForce
+                        if a==4||a==5||a==6
+                            perMvt.Fz(Count) = ForceBaseline-DeltaForceN(RandomForceCondition(i,2));
+                        else
+                            perMvt.Fz(Count) = Fz(a);
+                        end
+                    else
+                        if a==4||a==5||a==6
+                            perMvt.Fz(Count) = ForceBaseline-DeltaForceN(ForceCondition(i,2));
+                        else
+                            perMvt.Fz(Count) = Fz(a);
+                        end
+                    end
                 end
-            
+            else
+                if StimCondition(i,k)== 1
+                    perMvt.Fz(Count) = Fz(a);
+                else
+                    if RandomizationForce
+                        if a==4||a==5||a==6
+                            perMvt.Fz(Count) = ForceBaseline-DeltaForceN(RandomForceCondition(i,2));
+                        else
+                            perMvt.Fz(Count) = Fz(a);
+                        end
+                    else
+                        if a==4||a==5||a==6
+                            perMvt.Fz(Count) = ForceBaseline-DeltaForceN(ForceCondition(i,2));
+                        else
+                            perMvt.Fz(Count) = Fz(a);
+                        end
+                    end
+                end
             end
             perMvt.Fz_control(Count)= Fz_control(a);
             perMvt.TrigCam(Count) = TrigCam(a);
             perMvt.Relative(Count) = Relative(a);
             perMvt.Acc(Count) = Acc(a);
-            perMvt.VoltageStimTac(Count) = VoltageStimTac(a);
+            perMvt.VoltageStimtac(Count) = VoltageStimtac(a);
         end
     end
 %     trialCount = trialCount+1;
@@ -98,4 +151,5 @@ for f = 1:length(fields)
 end
 l=length(perMvt.X);
 
-savetable('Test_Save',perMvt,l);
+savetable('Test_9mvt_NoRand_Acc50000_50',perMvt,l);
+save('Test_9mvt_NoRand_Acc50000_50.mat')
