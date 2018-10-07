@@ -11,10 +11,11 @@
 
 clc
 clear all
+
 %% 1: Import of the parameters
 % Parameters for the analysis are stored in an Excel file
-Params=readtable('D:\data\jlambert\TFUS_Mesures_Welcome\AnalysisParameters.xlsx');
-DfN = 334; %  the row number to analyze which correspond to a file
+Params=readtable('D:\data\jlambert\TFUS_Mesures_Welcome\AnalysisParameters.csv');
+DfN = 337; %  the row number to analyze which correspond to a file
 table=1;
 disp('1 : Parameters imported')
 %% 2: Initialization of the variables
@@ -138,8 +139,9 @@ if Params.CalibrationPrototype(DfN)
         % Boucle pour trier par ordre numérique des différents "Steps" de mesure les fichiers contenus dans le dossier pointer par RootDir
         for ii=1:length(DataFilesName)
             st=NameFile{ii};
-            idx=strfind(st,'Num_Step_')+9;
-            idx2=strfind(st,'X_Coordinate')-1;
+%             idx=strfind(st,'Num_Step_')+9;
+            idx=strfind(st,'Num_Trial_')+10;
+            idx2=strfind(st,'Freq_350000')-1;
             stval(ii)=str2num(st(idx:idx2));
             [a,b]=sort(stval);
         end;
@@ -151,7 +153,7 @@ if Params.CalibrationPrototype(DfN)
                     FunctionGenVoltage(j,1:length(finalOutput.data{:,3})) = finalOutput.data{:,3};
                     HydrophoneVoltage(j,1:length(finalOutput.data{:,4})) = finalOutput.data{:,4};
                     DeltaT = finalOutput.propValues{1,3}{1,3};
-                    FunctionGenTimeVector(j,1:length(finalOutput.data{:,3})) = (0:DeltaT(1):(length(FunctionGenVoltage(x,y,:))-1)*DeltaT(1));
+                    FunctionGenTimeVector(j,1:length(finalOutput.data{:,3})) = (0:DeltaT(1):(length(FunctionGenVoltage(j,:))-1)*DeltaT(1));
                     FilenameMatrix{j,:}=NameFile2{j,1};  
                 clear finalOutput
                 clear metaStruct
