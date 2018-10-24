@@ -15,7 +15,7 @@ clear all
 %% 1: Import of the parameters
 % Parameters for the analysis are stored in an Excel file
 Params=readtable('D:\data\jlambert\TFUS_Mesures_Welcome\AnalysisParameters.csv');
-DfN = 337; %  the row number to analyze which correspond to a file
+DfN = 345; %  the row number to analyze which correspond to a file
 table=1;
 disp('1 : Parameters imported')
 %% 2: Initialization of the variables
@@ -603,7 +603,7 @@ end
 disp('7: Data saved in Excel file')
 
 if Params.CalibrationPrototype(DfN)
-       filename = strcat('DataCharacterisation_',Params.SessionName(DfN),'_',num2str(Params.NumberOfCycles(DfN)),'Cyc','_',num2str(Params.VppFunGen(DfN)),'Vpp','_',num2str(Params.UltrasoundBurstFrequency(DfN)/1000),'kHz');
+       filename = strcat('DataCharacterisation_',Params.SessionName(DfN),'_',num2str(Params.NumberOfCycles(DfN)),'Cyc','_',num2str(Params.VppFunGen(DfN)*10),'Vpp','_',num2str(Params.UltrasoundBurstFrequency(DfN)/1000),'kHz');
          save(filename{1},'FunctionGenVoltage','HydrophoneVoltage','FunctionGenTimeVector',...
         'BurstHydrophone','HydrophonePeakValue','HydrophonePeakCycle',...
         'PeakPressure','IpaEffective','Ipa','Ita','MI','TI','PII','Params',...
